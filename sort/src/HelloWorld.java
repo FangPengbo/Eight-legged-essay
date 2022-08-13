@@ -12,9 +12,37 @@ public class HelloWorld {
 
     public static void main(String[] args) {
         int[] nums = new int[]{5,3,7,2,2,1,9,8,4};
-        insert(nums);
+        quickSort(nums,0,nums.length - 1);
         System.out.println(Arrays.toString(nums));
     }
+
+
+    public static void quickSort(int[] a,int l, int h) {
+        if (l >= h){
+            return;
+        }
+        int pvIndex = partition(a,l,h);
+        quickSort(a,l,pvIndex-1);
+        quickSort(a,pvIndex + 1,h);
+    }
+
+
+
+    public static int partition(int [] a,int l,int h){
+        //基准点
+        int pv = a[h];
+        int i = l;
+        for (int j = l; j < h; j++) {
+            if(a[j] < pv){
+                exchange(a,j,i);
+                i++;
+            }
+        }
+        exchange(a,h,i);
+        return i;
+    }
+
+
 
 
     /**
