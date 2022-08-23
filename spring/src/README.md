@@ -137,3 +137,124 @@
 - @Transactional 没有保证原子行为
 
     - 解法：事务的原子性仅涵盖 insert、update、delete、select ... for update语句，select 方法并不阻塞
+
+## Spring Mvc执行流程
+
+- 初始化阶段
+    1. 在Web容器第一次用到 DispatcherServlet的时候，会创建其对象并执行init方法
+    2. init方法内会创建 Spring Web容器，并调用容器 refresh 方法
+    3. refresh 过程中会创建并初始化 SpringMvc 中的重要组件，例如HandlerMapping，HandleAdapter，HandlerExceptionResolver，ViewResolver等
+    4. 容器初始化后，会将上一步初始化好的重要组件，赋值给 DispatcherServlet 的成员变量
+- 匹配阶段
+    1. 用户发送的请求统一到达前端控制器 DispatcherServlet
+    2. DispatcherServlet遍历所有 HandlerMapping，找到与路径匹配的处理器
+        1. HandlerMapping有多个，每个HandlerMapping会返回不同的处理器对象，谁先匹配，返回谁的处理器，其中识别@RequestMapping的优先级最高
+        2. 对应@RequestMapping的处理器是 HandlerMethod，它包含了控制对象和控制器方法信息
+        3. 其中路径与处理器的映射关系在 HadnlerMapping初始化时就会建立好
+    3. 将HandlerMethod 连同匹配到的拦截器，生成调用链对象 HandlerExecutionChain返回
+    4. 遍历HandlerAdapter处理器适配器，找到能处理HandlerMethod的适配器对象，开始调用
+- 执行阶段
+    1. 执行拦截器 PreHandle
+    2. 由HandlerAdapter调用HandlerMethod
+        1. 调用前处理不同类型的参数
+        2. 调用后处理不同类型的返回值
+    3. 第二步没有异常
+        1. 返回ModelAndView
+        2. 执行拦截器postHandle方法
+        3. 解析视图，得到View对象，进行视图渲染
+    4. 第二步有异常，进入HandlerExceptionResolver异常处理流程
+    5. 最后都会执行拦截器的 afterCompletion方法
+    6. 如果控制器方法标注了 @ResponseBody注解，则在第二步就会生成json结果，并标记ModelAndView已处理，这样就不会执行第三步的视图渲染
+
+## Spring中的注解
+
+- 事物
+    - @EnableTransactionManagement：开启声明式事务管理
+    - @Transactional：标记需要事务管理的方法或者类
+- 核心
+    - @Order：标记Bean在spring容器中初始化的顺序，value值越大优先级越小
+- 事件、调度
+    - @EventListener：监听事件的发生
+    - @EnableScheduling：开启定时任务
+    - @Scheduled：标记方法为定时任务，配置任务执行的规则
+- 切面
+    - @EnableAspectJAutoProxy：启动AOP代理
+- 组件扫面与配置类
+    - @Component、@Controller、@Service、@Respository：标记组件扫描，会被加到Spring容器中
+    - @ComponentScan：扫描包下边标记了上边注解的类，加入到容器中
+    - @Conditional：条件装配，与组件扫描组合使用，满足条件的才会被加入到容器中
+    - @Configuration：标记配置类，常与@Bean注解配合使用
+    - @Bean：标记在方法上，表示把返回值加入到容器中，常用作一些复杂Bean的配置生成，**生成的bean名称就是方法名**
+    - @Import：导入指定类加入到容器中
+    - @Lazy：标记在类上，表示类为懒加载，用到这个类的时候才会去初始化，加在成员变量上，表示先创建代理类解决循环依赖问题，用到时才会去完整实例化这个类
+    - @Primary：通过类型匹配注入Bean时，如果多个类型的bean，则优先选择加了此注解的Bean来进行注入
+    - @PropertySource：读取外部的kv配置文件加入到env环境中来进行对Bean初始化时的值注入
+    - @Autowired：自动注入
+    - @Qualifier：通过类型匹配注入时可以指定bean名称来指定注入
+    - @Value：值注入
+
+## Spring Mvc注解
+
+- Mapping
+    - @RequestMapping：处理请求路径与控制器的映射关系
+- Rest
+    - @RequestBody：处理请求体
+    - @ResponseBody：处理响应体
+    - @ResponseStatus：处理状态码
+- 参数
+    - @RequestHeader：获取请求头里的值
+    - @CookieValue：获取Cookie里的值
+    - @PathVariable：获取请求路径上的值
+    - @RequestParam：获取请求参数的值
+- 跨域
+    - @CrossOrigin：解决跨域问题，加一些特殊的请求头
+
+## Spring Boot注解
+
+- Properties
+    - @EnableConfigurationProperties：开启配置类注入
+    - @ConfigurationProperties：标记在类上可以完成成员变量与配置文件中的属性自动注入
+- Condition
+    - @ConditionalOnClass：标记类路径下包含某个Bean的时候才成立会注入这个bean
+    - @ConditionalOnMissingBean：标记缺失某个类的时候，才会注入这个Bean，常用作默认Bean实现的功能
+    - @ConditionalOnProperty：标记与配置文件中的某些键值信息一致时，才会注入这个Bean
+- Auto
+    - @SpringBootApplication：组合注解
+    - @SpringBoottConfiguration：标记针对SpringBoot的配置类
+    - @EnableAutoConfiguration：自动装配核心注解，注入Bean
+
+## @Configuration注解
+
+- 配置类其实相当于一个工厂，标注了@Bean注解的方法相当于工厂方法
+- @Bean 不支持方法重载，如果由多个重载方法，仅有一个能入选为工厂方法
+- @Configuration 默认会为标注的类生成代理，其目的是保证@Bean方法相互调用时，仍然能保证其单例特性
+
+## @Import注解
+
+- 可以引入单个Bean
+- 引入一个配置类，配置类下边的@Bean都会被加入到容器中
+- 通过实现Selector接口，返回一个类名数组，可以引入多个类
+- 通过实现ImportBeanDefinitionRegistrar接口，可以自定义BeanDefiniton来实例化Bean
+- 通过实现DeferredImportSelector接口，返回一个类名数组，可以引入多个类，先加载当前配置类的@Bean，后续再加载@Import进来的配置类即@Bean
+
+## Springboot自动配置
+
+- @SpringbootConfiguration：主配置类，全局只能有一个标记了这个注解的配置类
+- @ComponentScan：主要做组件扫描，里边配置了一些过滤器，过滤掉符合规则的类，不让进行注入，这里排除了springboot自身的所有自动配置类
+- @EnableAutoConfiguration：组合注解
+    - @AutoConfigurationPackage：用来记住扫描的起始包
+    - **@Import(AutoConfigurationImportSelector.class)**：解耦合，加载主从配置类，用来加载 META-INF/spring.factories中的自动配置类，优先级最低
+
+## Spring中的设计模式
+
+1. 单例模式：spring容器中的bean 并不是单例模式
+2. 建造器模式：灵活构建对象，链式生成完全品对象
+3. 工厂模式：隐藏实现细节，通过方法来获取成品
+4. 适配器模式：统一接口，各自实现各自调用
+5. 组合模式：把分散的调用统一起来，通过具体实现委托到实现类再调用
+6. 装饰器模式：增强对象的功能
+7. 代理模式：创建代理对象，对目标进行访问控制
+8. 责任链模式：把调用按顺序排成顺序，按照顺序去执行实现
+9. 观察者模式：解耦调用关系，一个发布一个监听
+10. 策略模式：在处理的时候通过不同策略来执行不同动作
+11. 模板模式：父类定义框架，无法实现的流程留给子类去实现
