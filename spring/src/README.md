@@ -1,6 +1,14 @@
 
 # Spring
+## 拦截器和过滤器的区别
 
+- 定义和实现不同
+    - 过滤器是servlet的定义，使用过滤器要依赖于Tomat等容器，它只能在web程序中使用
+    - 拦截器是spring的一个组件，由spring容器 管理，可以单独使用，不仅能在web程序中，也可以用在Application和Swing等程序中
+- 触发的时机不同
+    - 过滤器只能在servlet前后起作用
+    - 拦截器可以深入到方法前后和异常抛出前后起作用
+- 在spring中，拦截器可以获取到容器中的bean，过滤器则不行
 ## ApplicationContext refresh步骤
 
 1. prepareRefresh - 做好准备工作
