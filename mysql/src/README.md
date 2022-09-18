@@ -98,3 +98,8 @@ select * from table where  age = 10 and name = 'zxf'; 因为有mysql优化，也
 - 能使用limit 尽量使用limit
 - 单表索引尽量控制在5个以内
 - 组合索引的列最好控制在5个以内
+
+## mysql ABC联合索引，where B 和 C 索引生效吗 where A 和 B 索引生效吗 where A 和 C 生效吗
+
+- 没有最左元素的前提下，索引不生效，也就是where B 和 C 不生效
+- 在使用最左元素的前提下，索引是生效的，where A 和 B 生效，同理 where A 和 C 也生效
